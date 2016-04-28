@@ -22,3 +22,12 @@ https://www.etsy.com/developers/documentation/getting_started/jsonp#section_usin
 
 Associations
 https://www.etsy.com/developers/documentation/getting_started/resources#section_associations
+
+
+u: ieuanesque
+13u@n35qu3
+
+APP NAME Etsy Search UI 
+KEYSTRING 99z99h6ab0ff4m7bwebzzose 
+SHARED SECRET yfy5so8xmq
+

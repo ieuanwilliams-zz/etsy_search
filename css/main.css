@@ -160,6 +160,20 @@ textarea {
 }
 
 
+/* ETSY start */
+body{ margin:auto; font-size:16px; }
+
+h1{ color:#454545; font-size:250%; letter-spacing:-2px; }
+
+.etsy-interface{
+  margin:auto;
+  max-width:940px;
+}
+
+input[type=text], input[type=submit]{ padding:5px 10px; color:#333; }
+
+/* ETSY end */
+
 /* ==========================================================================
    EXAMPLE Media Queries for Responsive Design.
    These examples override the primary ('mobile first') styles.

@@ -2,19 +2,78 @@
 *
 */
 
-var View = View || {};
-(function( View ){
+var View = View || {}
+, Search;
+(function( Search, View ){
 
     "use strict";
 
-    View.api_key = "99z99h6ab0ff4m7bwebzzose";
+    // method to enforce decoupling of states of the view from the logic by which they are constructed and handled 
+    Search = function( options ){
+        // enforce prototypal inheritance
+        if( ! ( this instanceof Search ) ){ return new Search( options ); }
+        this.config = {};
+        this.query = View.utilities.proxy( this.config );
+
+    }
+
+    // View.model provides methods and data constructs to model the retrieval of useful, relevant data from the remote origin
+    View.model = {
+        api_key: "99z99h6ab0ff4m7bwebzzose",
+        base: "https://openapi.etsy.com/v2",
+        method: false, // cache current query method
+        uri: false, // cache a current endpoint uri
+        endpoint: function( options ){
+            this.uri = options.uri || false; // set || reset
+            this.method = options.method || false; // set || reset
+            var callback = options.callback || false
+            , query = [ "&", options.query ].join( "" ) || "";
+            if( this.uri && this.method && callback && typeof callback === "function" ){
+                // return a construct that forms a valid JSONP src attribute
+                return [ this.base, this.uri, "/", this.method, "/etsystore.js?callback=", callback, "&api_key=", this.api_key, query ].join( "" )
+            }
+            return false;
+        },
+        uri: false,
+        methods: {
+            find_all: "findAllListingActive",
+            uri: {
+              find_all: "/listings/active"
+            }
+        }        
+    }
 
     // View.factories provides methods and data constructs to create new elements for the view based on user inputs
     View.factories = {
         api: {
-            // a factory method to create a request to an API
+            // an abstract method to interfacet with other methods, etc.
+            // @param options is the event object, the lexical 'this' is the object passed into the event listener
+            controller: function( options ){
+                var search_query = false;
+                for( var i=0,count=this.getElementsByTagName( "input" ).length; i<count; i+=1 ){
+                    var query = this.getElementsByTagName( "input" )[ i ];
+                    if( query.getAttribute( "name" ) === "request" ){
+                        search_query = query.value;
+                    }
+                }
+                if( search_query ){
+                    search_query.replace( " ", "+" );
+                }
+
+                // 1. get the information from the form
+
+                // 2. create a query string
+
+                // 3. initialize a Search()
+
+                // 4. update state, e.g. URL and view
+            },
+            // a factory method to create a semantic request to an API, based on search criteria
             query: function( options ){
 
+                return {
+
+                };
             }
         },
         // creates view-ready representations from data
@@ -78,18 +137,30 @@ var View = View || {};
             var eventType = options.eventType || false
             , el = options.el || false
             , callback = options.callback || false
-            , capture = options.capture || false;
+            , capture = options.capture || false
+            , preventDefault = options.preventDefault || false;
             if( eventType && el && callback ){
                 var htmlObject = document.getElementById( el );
                 // let's not worry about IE8...
                 htmlObject.addEventListener(
                     eventType,
                     function( event ){
-                        callback.apply( event, [ options ] )
+                        if( preventDefault ){ event.preventDefault(); }
+                        callback.apply( this, [ event ] )
                     },
                     capture
                 );
             }
+        },
+        input_handler: function( options ){
+            if( options.ok ){
+                // traffic our data
+            } else {
+                this.handle_error( options );
+            }
+        },
+        handle_error: function( options ){
+
         }
     }
 
@@ -113,6 +184,10 @@ var View = View || {};
         proxy: function(){}
     }
 
-    View.controllers.addListener( { eventType: "submit", el: "search-request", callback: View.test } );
+    // set configuration for handling form submissions, i.e. API queries
+    var searchConfig = { eventType: "submit", el: "search-request", callback: View.factories.api.controller, preventDefault: true };
 
-}( View ));
+    // pass the configuraiton to initialize the handling
+    View.controllers.addListener( searchConfig );
+
+}( Search, View ));

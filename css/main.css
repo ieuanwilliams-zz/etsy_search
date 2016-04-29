@@ -165,9 +165,36 @@ body{ margin:auto; font-size:16px; }
 
 h1{ color:#454545; font-size:250%; letter-spacing:-2px; }
 
+.container{
+  margin:0 20px;
+}
+
 .etsy-interface{
   margin:auto;
   max-width:940px;
+}
+
+article.result{
+  padding: 20px 80px 20px 0;
+  border-bottom:1px solid #ddd;
+  margin: 0 0 20px 0;
+}
+
+article.result .description{ font-size: 90%; color: #555; margin-bottom: 20px; line-height: 1.4; }
+
+.categories, .tags{
+   color:#999;
+}
+.categories:before, .tags:before{
+  font-weight:bold;
+  font-size: 90%;
+  text-transform: uppercase;
+}
+.categories:before{
+  content: "Categories: ";
+}
+.tags:before{
+  content: "Tags: ";
 }
 
 input[type=text], input[type=submit]{ padding:5px 10px; color:#333; }

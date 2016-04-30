@@ -124,11 +124,14 @@ var View = View || {}
                 results.appendChild( this.html.el( { tag: "h2", datum: "Result" } ) );
                 results.appendChild( result );
             }
-            var results_meta = {
-                count: ( options.count ),
-                pagination: ( options.pagination )
-            };
-            View.state.update.search_results( { result: results, results_meta: results_meta } );
+            var result_count = View.factories.result_count( options );
+            View.state.update.search_results( { result: results, result_count: result_count } );
+        },
+        result_count: function( options ){
+            return View.factories.html.el( {
+                tag: "h4",
+                datum: ( document.createTextNode( [ "Displaying", ( ( options.pagination.effective_page === 1 ) ? options.pagination.effective_page : options.pagination.effective_limit*options.pagination.effective_page ), "to", options.pagination.effective_limit, "of", options.count, "results" ].join( " " ) ) )
+            } );            
         },
         // creates view-ready representations from data
         html: {
@@ -292,14 +295,10 @@ var View = View || {}
             // a method to add content to the view, once API data is returned
             search_results: function( options ){
                 var result = options.result || false
-                , meta = options.results_meta;
+                , result_count = options.result_count || false;
                 if( result ){
                     var dropzone = document.getElementById( "results" );
                     if( dropzone ){
-                        var result_count = View.factories.html.el( {
-                            tag: "h4",
-                            datum: ( document.createTextNode( [ "Displaying", ( ( meta.pagination.effective_page === 1 ) ? meta.pagination.effective_page : meta.pagination.effective_limit*meta.pagination.effective_page ), "to", meta.pagination.effective_limit, "of", meta.count, "results" ].join( " " ) ) )
-                        } );
                         dropzone.appendChild( result_count );
                         dropzone.appendChild( result );
                         var reveals = document.getElementsByClassName( "more" );
@@ -311,7 +310,6 @@ var View = View || {}
                             // pass the configuraiton to initialize the handling
                             View.controllers.addListener( revealConfig );                            
                         }
-                        console.log( meta );
                     }
                 }
             },

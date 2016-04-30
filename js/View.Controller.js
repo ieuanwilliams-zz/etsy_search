@@ -12,9 +12,28 @@ var View = View || {}
     Search = function( options ){
         // enforce prototypal inheritance
         if( ! ( this instanceof Search ) ){ return new Search( options ); }
-        this.config = {};
-        this.query = View.utilities.proxy( this.config );
 
+        this.options = options;
+
+        var src = View.factories.api.endpoint( this.options.query )
+        , script = View.factories.html.script( { src: src } );
+
+        // manage the state of the view
+        this.state();
+        
+        if( script ){
+            var target = document.getElementsByTagName( "head" )[ 0 ];
+            target.appendChild( script );
+        }
+
+        this.config = {};
+        this.query = View.utilities.proxy( this.config );        
+    }
+
+    Search.prototype.state = function(){
+        var state = View.state; // cache reference
+        state.update.clear();
+        // state.update.url( { query: this.options.terms } );
     }
 
     // View.model provides methods and data constructs to model the retrieval of useful, relevant data from the remote origin
@@ -40,7 +59,6 @@ var View = View || {}
             controller: function( options ){
                 var search_query = false
                 , clean_query = false
-                , self = View.factories.api; // [ ! ] we're setting 'this' in the apply method
                 for( var i=0,count=this.getElementsByTagName( "input" ).length; i<count; i+=1 ){
                     var query = this.getElementsByTagName( "input" )[ i ];
                     if( query.getAttribute( "name" ) === "request" ){
@@ -49,26 +67,22 @@ var View = View || {}
                 }
                 if( search_query ){
                     clean_query = search_query.replace( / /g, "+" );
-
-                    var query = self.endpoint( {
+                    var request = {
                         uri: ( View.model.methods.uri.find_all ),
                         method: ( View.model.methods.find_all ),
                         callback: "View.controllers.input_handler",
                         query: clean_query
-                    } );
-
-                    var script = View.factories.html.script( { src: query } );
-                    if( script ){
-                        var target = document.getElementsByTagName( "head" )[ 0 ];
-                        target.appendChild( script );
-                    }
+                    };
+                    Search( { query: request, terms: clean_query } );
                 }
 
-                // TODO: initialize a Search(), port the current approach into the prototypal model
                 // TODO: update state, e.g. URL and view
+                // TODO: add pagination
+                // TODO: add results count
             },
             endpoint: function( options ){
-                var model = View.model;
+                var model = View.model
+                , endpoint = false;
                 model.uri = options.uri || false; // set || reset
                 model.method = options.method || false; // set || reset
                 var callback = options.callback || false
@@ -76,16 +90,19 @@ var View = View || {}
                 , type = options.type || "keywords";
                 if( model.uri && model.method && callback ){
                     // return a construct that forms a valid JSONP src attribute
-                    return [ model.base, model.uri, ".js?callback=", callback, "&api_key=", model.api_key, "&", type, "=", query ].join( "" )
+                    endpoint = [ model.base, model.uri, ".js?callback=", callback, "&api_key=", model.api_key, "&", type, "=", query ].join( "" )
                 }
-                return false;
+                return endpoint;
             },
             // a factory method to create a semantic request to an API, based on search criteria
             query: function( options ){
-                return {
-
-                };
+                return {};
             }
+        },
+        noresults: function( options ){
+            var results = document.createDocumentFragment();
+            results.appendChild( this.html.el( { tag: "h2", datum: "Er, we didn't find anything that matched your search." } ) );
+            View.state.update.search_results( { result: results } );
         },
         // an abstract model for what will be built into the DOM
         results: function( options ){
@@ -155,14 +172,14 @@ var View = View || {}
                 , url = options.url || false
                 , tags = options.tags || false
                 , categories = options.categories || false;
-                if( url && title && header ){
+                if( url && title ){
                     var anchor = this.el({
                         tag: "a",
                         datum: ( this.text( { text: title } ) ),
                         attrs:[ { attr: "href", set: url },{ attr: "target", set: "_blank" } ]
                     })
                     , header = this.el({
-                        tag: "h3",
+                        tag: "h5",
                         datum: anchor
                     });
                     meta.appendChild( header );
@@ -173,6 +190,12 @@ var View = View || {}
                         datum: ( this.text( { text: description } ) ),
                         attrs:[ { attr: "class", set: "description" } ]
                     });
+                    var more_btn = this.el({
+                        tag: "a",
+                        datum: ( document.createTextNode( "View More" ) ),
+                        attrs:[ { attr: "href", set: "javascript:;" }, { attr: "class", set: "more" } ]
+                    });
+                    teaser.appendChild( more_btn );
                     meta.appendChild( teaser );
                 }
                 if( categories && tags ){
@@ -236,7 +259,11 @@ var View = View || {}
         },
         input_handler: function( options ){
             if( options.ok ){
-                View.factories.results( options );
+                if( options.count === 0 ){ 
+                    View.factories.noresults( options );
+                } else {
+                    View.factories.results( options );
+                }
             } else {
                 this.error_handler( options );
             }
@@ -253,6 +280,10 @@ var View = View || {}
         history: [],
         // method to update the state of the view, based on something changing, e.g. a new request being made
         update: {
+            clear: function(){
+                var content = document.getElementById( "results" );
+                content.innerHTML = "";
+            },
             // a method to add content to the view, once API data is returned
             search_results: function( options ){
                 var result = options.result || false;
@@ -260,19 +291,42 @@ var View = View || {}
                     var dropzone = document.getElementById( "results" );
                     if( dropzone ){
                         dropzone.appendChild( result );
+                        var reveals = document.getElementsByClassName( "more" );
+                        for( var i=0, count = reveals.length; i<count; i+=1 ){
+                            var id = [ "more-", i ].join( "" );
+                            reveals[ i ].setAttribute( "id", id )
+                            // set configuration for handling form submissions, i.e. API queries
+                            var searchConfig = { eventType: "click", el: id, callback: View.utilities.reveal };
+
+                            // pass the configuraiton to initialize the handling
+                            View.controllers.addListener( searchConfig );                            
+                        }
+
                     }
                 }
             },
             // a method to persist state of the view via the URL
             url: function( options ){
-
+                console.log( options );
+                var url_state = options;
+                history.pushState( url_state, [ "results for ", url_state.query.replace( "+", " " ) ].join( "" ) );
             }
         }
     }
 
     // View.utilities provides shared methods and data constructs
     View.utilities = {
-        proxy: function(){}
+        proxy: function(){},
+        reveal: function( event ){
+            var state = ( this.parentNode ).getAttribute( "class" );
+            if( state.indexOf( "reveal" ) > -1 ){
+                ( this.parentNode ).setAttribute( "class", state.replace( " reveal", "" ) );
+                ( document.getElementById( event.target.id ) ).innerHTML = "View More";
+            } else {
+                ( this.parentNode ).setAttribute( "class", [ state, " reveal" ].join( "" ) );
+                ( document.getElementById( event.target.id ) ).innerHTML = "View Less";
+            }
+        }
     }
 
     // set configuration for handling form submissions, i.e. API queries
@@ -280,5 +334,10 @@ var View = View || {}
 
     // pass the configuraiton to initialize the handling
     View.controllers.addListener( searchConfig );
+
+    // build a query from a deep link
+    if( location.search.length ){
+
+    }
 
 }( Search, View ));

@@ -175,12 +175,37 @@ h1{ color:#454545; font-size:250%; letter-spacing:-2px; }
 }
 
 article.result{
-  padding: 20px 80px 20px 0;
+  padding: 0 80px 20px 0;
   border-bottom:1px solid #ddd;
   margin: 0 0 20px 0;
 }
 
-article.result .description{ font-size: 90%; color: #555; margin-bottom: 20px; line-height: 1.4; }
+article.result .description{
+  font-size: 90%;
+  color: #555;
+  margin-bottom: 20px;
+  line-height: 1.4;
+  height:100px;
+  overflow: hidden;
+  position:relative;
+}
+
+article.result .description .more{
+  position: absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  line-height: 2.5;
+  margin:auto;
+  width:100%;
+  display:block;
+  background-color:#fff;
+  text-align: center;
+}
+article.result .description.reveal{
+  height:auto;
+  padding-bottom: 60px;
+}
 
 .categories, .tags{
    color:#999;

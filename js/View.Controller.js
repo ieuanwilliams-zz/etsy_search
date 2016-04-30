@@ -78,7 +78,6 @@ var View = View || {}
 
                 // TODO: update state, e.g. URL and view
                 // TODO: add pagination
-                // TODO: add results count
             },
             endpoint: function( options ){
                 var model = View.model
@@ -113,7 +112,8 @@ var View = View || {}
                 , title = options.results[ i ].title
                 , url = options.results[ i ].url
                 , tags = options.results[ i ].tags.join( ", " )
-                , categories = options.results[ i ].category_path.join( ", " );
+                , categories = options.results[ i ].category_path.join( ", " )
+                , listing_id = options.listing_id || false; // to get the image(s) associated with the listing
                 var result = this.html.article( {
                     description: description,
                     title: title,
@@ -124,7 +124,11 @@ var View = View || {}
                 results.appendChild( this.html.el( { tag: "h2", datum: "Result" } ) );
                 results.appendChild( result );
             }
-            View.state.update.search_results( { result: results } );
+            var results_meta = {
+                count: ( options.count ),
+                pagination: ( options.pagination )
+            };
+            View.state.update.search_results( { result: results, results_meta: results_meta } );
         },
         // creates view-ready representations from data
         html: {
@@ -259,6 +263,7 @@ var View = View || {}
         },
         input_handler: function( options ){
             if( options.ok ){
+                console.log( options );
                 if( options.count === 0 ){ 
                     View.factories.noresults( options );
                 } else {
@@ -286,22 +291,27 @@ var View = View || {}
             },
             // a method to add content to the view, once API data is returned
             search_results: function( options ){
-                var result = options.result || false;
+                var result = options.result || false
+                , meta = options.results_meta;
                 if( result ){
                     var dropzone = document.getElementById( "results" );
                     if( dropzone ){
+                        var result_count = View.factories.html.el( {
+                            tag: "h4",
+                            datum: ( document.createTextNode( [ "Displaying", ( ( meta.pagination.effective_page === 1 ) ? meta.pagination.effective_page : meta.pagination.effective_limit*meta.pagination.effective_page ), "to", meta.pagination.effective_limit, "of", meta.count, "results" ].join( " " ) ) )
+                        } );
+                        dropzone.appendChild( result_count );
                         dropzone.appendChild( result );
                         var reveals = document.getElementsByClassName( "more" );
                         for( var i=0, count = reveals.length; i<count; i+=1 ){
                             var id = [ "more-", i ].join( "" );
                             reveals[ i ].setAttribute( "id", id )
                             // set configuration for handling form submissions, i.e. API queries
-                            var searchConfig = { eventType: "click", el: id, callback: View.utilities.reveal };
-
+                            var revealConfig = { eventType: "click", el: id, callback: View.utilities.reveal };
                             // pass the configuraiton to initialize the handling
-                            View.controllers.addListener( searchConfig );                            
+                            View.controllers.addListener( revealConfig );                            
                         }
-
+                        console.log( meta );
                     }
                 }
             },
